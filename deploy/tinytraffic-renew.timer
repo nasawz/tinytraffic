@@ -1,0 +1,10 @@
+[Unit]
+Description=Check the tinytraffic HTTPS certificate twice a day
+
+[Timer]
+OnCalendar=*-*-* 03,15:00:00
+RandomizedDelaySec=1h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

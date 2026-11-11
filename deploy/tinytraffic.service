@@ -1,0 +1,19 @@
+[Unit]
+Description=tinytraffic analytics
+After=network.target
+
+[Service]
+User=tinytraffic
+Group=tinytraffic
+EnvironmentFile=/etc/tinytraffic.env
+ExecStart=/opt/tinytraffic/bin/tinytraffic serve
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/tinytraffic/data
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,7 @@
+[Unit]
+Description=Renew the tinytraffic HTTPS certificate
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/tinytraffic-renew-cert
