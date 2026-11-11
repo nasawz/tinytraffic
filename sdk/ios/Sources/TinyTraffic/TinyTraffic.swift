@@ -27,18 +27,21 @@ public final class TinyTraffic: @unchecked Sendable {
         public var channel: String?
         /// Development builds: events are collected nowhere and sent nowhere.
         public var debug: Bool
+        /// Start with collection on or off, e.g. until the user has consented.
+        public var enabled: Bool
         /// A session ends after this long in the background.
         public var sessionTimeout: TimeInterval
         /// Events are sent once this many are queued, or after `flushInterval`.
         public var batchSize: Int
         public var flushInterval: TimeInterval
 
-        public init(endpoint: URL, appId: String, channel: String? = nil, debug: Bool = false,
+        public init(endpoint: URL, appId: String, channel: String? = nil, debug: Bool = false, enabled: Bool = true,
                     sessionTimeout: TimeInterval = 30 * 60, batchSize: Int = 20, flushInterval: TimeInterval = 10) {
             self.endpoint = endpoint
             self.appId = appId
             self.channel = channel
             self.debug = debug
+            self.enabled = enabled
             self.sessionTimeout = sessionTimeout
             self.batchSize = batchSize
             self.flushInterval = flushInterval
@@ -79,11 +82,12 @@ public final class TinyTraffic: @unchecked Sendable {
             if let transport { self.transport = transport }
             self.context = Self.deviceContext()
             self.pending = (defaults.array(forKey: Self.queueKey) as? [[String: Any]]) ?? []
+            self.enabled = configuration.enabled
             self.sessionId = UUID().uuidString
             self.backgroundedAt = nil
         }
         observeLifecycle()
-        track("app_open")
+        if configuration.enabled { track("app_open") }
     }
 
     public func configure(endpoint: String, appId: String, channel: String? = nil, debug: Bool = false) {
@@ -101,10 +105,23 @@ public final class TinyTraffic: @unchecked Sendable {
         record(name: name, screen: screen, props: props)
     }
 
-    /// Turn collection on or off, e.g. with the user's consent. While off, nothing is queued or sent.
+    /// Turn collection on or off, e.g. with the user's consent. While off,
+    /// nothing is queued or sent. Turning it off also discards what has not
+    /// been sent yet; turning it on starts with an `app_open`.
     public var isEnabled: Bool {
         get { queue.sync { enabled } }
-        set { queue.sync { enabled = newValue } }
+        set {
+            let turnedOn: Bool = queue.sync {
+                let was = enabled
+                enabled = newValue
+                if !newValue {
+                    pending = []
+                    persistLocked()
+                }
+                return newValue && !was && config != nil
+            }
+            if turnedOn { track("app_open") }
+        }
     }
 
     /// Sends everything queued now (e.g. before the app suspends).

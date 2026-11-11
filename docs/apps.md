@@ -27,8 +27,10 @@ screen view is a pageview and a session is a visit.
 - The server hashes it with the site ID before storing it, so the same device
   is a different visitor in each app.
 - The IP address is used for the country and city, then discarded.
-- Nothing is sent before you call the SDK, and `setEnabled(false)` /
-  `isEnabled = false` stops collection, e.g. until the user consents.
+- Nothing is sent before you call the SDK. Start with `enabled: false` and
+  switch on later (`TinyTraffic.setEnabled(true)` / `isEnabled = true`) to wait
+  for the user's consent. Switching off stops collection and discards events
+  that were not sent yet.
 
 ## SDKs
 

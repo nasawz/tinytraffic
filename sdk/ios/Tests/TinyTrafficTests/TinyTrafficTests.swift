@@ -74,6 +74,28 @@ final class TinyTrafficTests: XCTestCase {
         XCTAssertTrue((defaults.array(forKey: "tinytraffic.queue") ?? []).isEmpty)
     }
 
+    func testDisabledRecordsNothingAndTurningOffDropsTheQueue() {
+        let box = Box()
+        let tt = TinyTraffic()
+        let defaults = makeDefaults()
+        // Offline, so what is queued stays queued.
+        box.outcome = .retry
+        tt.configure(.init(endpoint: URL(string: "https://stats.example.com")!, appId: "com.example.app", enabled: false, batchSize: 100, flushInterval: 3600),
+                     defaults: defaults,
+                     transport: { req, done in box.add(req); done(box.outcome) })
+        tt.screen("closet")
+        XCTAssertFalse(tt.isEnabled)
+        XCTAssertTrue((defaults.array(forKey: "tinytraffic.queue") ?? []).isEmpty, "nothing is recorded before consent")
+
+        tt.isEnabled = true   // consent: starts with app_open
+        tt.screen("closet")
+        wait { (defaults.array(forKey: "tinytraffic.queue") ?? []).count == 2 }
+        XCTAssertEqual((defaults.array(forKey: "tinytraffic.queue") ?? []).count, 2)
+
+        tt.isEnabled = false  // opted out: unsent events are discarded
+        XCTAssertTrue((defaults.array(forKey: "tinytraffic.queue") ?? []).isEmpty)
+    }
+
     func testDebugBuildsSendNothing() {
         let box = Box()
         let tt = TinyTraffic()

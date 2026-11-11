@@ -37,6 +37,8 @@ export interface TinyTrafficOptions {
   channel?: string;
   /** Development builds: nothing is recorded or sent. */
   debug?: boolean;
+  /** Start with collection on or off, e.g. until the user has consented. Default on. */
+  enabled?: boolean;
 }
 
 class QueuedEvent {
@@ -102,6 +104,7 @@ export class TinyTraffic {
       return;
     }
     TinyTraffic.options = options;
+    TinyTraffic.on = options.enabled !== false;
     try {
       TinyTraffic.prefs = preferences.getPreferencesSync(context, { name: PREFS_NAME });
     } catch (err) {
@@ -121,9 +124,21 @@ export class TinyTraffic {
     TinyTraffic.track('app_open');
   }
 
-  /** Turn collection on or off, e.g. with the user's consent. While off, nothing is queued or sent. */
+  /**
+   * Turn collection on or off, e.g. with the user's consent. While off,
+   * nothing is queued or sent. Turning it off also discards what has not been
+   * sent yet; turning it on starts with an app_open.
+   */
   static setEnabled(enabled: boolean): void {
+    const was = TinyTraffic.on;
     TinyTraffic.on = enabled;
+    if (!enabled) {
+      TinyTraffic.clearTimer();
+      TinyTraffic.queue = [];
+      TinyTraffic.persist();
+    } else if (!was && TinyTraffic.options !== undefined) {
+      TinyTraffic.track('app_open');
+    }
   }
 
   /** Records that a screen was shown. Shows up under Pages. */
