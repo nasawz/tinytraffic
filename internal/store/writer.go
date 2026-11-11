@@ -42,6 +42,11 @@ type Event struct {
 	HasLocation bool
 	Latitude    float32
 	Longitude   float32
+	// App analytics: empty for web events.
+	AppVersion  string
+	AppBuild    string
+	DeviceModel string
+	Locale      string
 }
 
 const (
@@ -139,6 +144,7 @@ var eventColumns = []string{
 	"country", "region", "city",
 	"browser", "browser_version", "os", "os_version", "device",
 	"screen_width", "props", "latitude", "longitude",
+	"app_version", "app_build", "device_model", "locale",
 }
 
 // insertDuckDB appends events with the DuckDB appender.
@@ -165,6 +171,7 @@ func insertDuckDB(ctx context.Context, db *sql.DB, events []Event) error {
 				e.Country, e.Region, e.City,
 				e.Browser, e.BrowserVersion, e.OS, e.OSVersion, e.Device,
 				e.ScreenWidth, e.Props, lat, lon,
+				e.AppVersion, e.AppBuild, e.DeviceModel, e.Locale,
 			); err != nil {
 				a.Close()
 				return err

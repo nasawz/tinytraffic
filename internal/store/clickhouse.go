@@ -53,7 +53,11 @@ var clickHouseSchema = []string{
 		screen_width    UInt16,
 		props           String,
 		latitude        Nullable(Float32),
-		longitude       Nullable(Float32)
+		longitude       Nullable(Float32),
+		app_version     LowCardinality(String),
+		app_build       LowCardinality(String),
+		device_model    LowCardinality(String),
+		locale          LowCardinality(String)
 	)
 	ENGINE = MergeTree
 	PARTITION BY toYYYYMM(ts)
@@ -102,6 +106,10 @@ var clickHouseSchema = []string{
 	) ENGINE = MergeTree ORDER BY day TTL day + INTERVAL 3 DAY`,
 	// Columns added later go here as ADD COLUMN IF NOT EXISTS, so this list
 	// can run on every start.
+	`ALTER TABLE events ADD COLUMN IF NOT EXISTS app_version LowCardinality(String)`,
+	`ALTER TABLE events ADD COLUMN IF NOT EXISTS app_build LowCardinality(String)`,
+	`ALTER TABLE events ADD COLUMN IF NOT EXISTS device_model LowCardinality(String)`,
+	`ALTER TABLE events ADD COLUMN IF NOT EXISTS locale LowCardinality(String)`,
 	`ALTER TABLE sites ADD COLUMN IF NOT EXISTS public UInt8 DEFAULT 0 AFTER timezone`,
 }
 
@@ -351,6 +359,7 @@ func insertClickHouse(ctx context.Context, db *sql.DB, events []Event) error {
 			e.Country, e.Region, e.City,
 			e.Browser, e.BrowserVersion, e.OS, e.OSVersion, e.Device,
 			e.ScreenWidth, e.Props, lat, lon,
+			e.AppVersion, e.AppBuild, e.DeviceModel, e.Locale,
 		); err != nil {
 			return err
 		}

@@ -220,6 +220,7 @@ FROM events WHERE site_id = ? AND ts >= ? AND ts < ? ORDER BY ts DESC`, siteID, 
 			&e.Country, &e.Region, &e.City,
 			&e.Browser, &e.BrowserVersion, &e.OS, &e.OSVersion, &e.Device,
 			&e.ScreenWidth, &e.Props, &lat, &lon,
+			&e.AppVersion, &e.AppBuild, &e.DeviceModel, &e.Locale,
 		); err != nil {
 			return copied, err
 		}

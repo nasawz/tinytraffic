@@ -48,6 +48,11 @@ var columns = map[string]string{
 	"browser":      "browser",
 	"os":           "os",
 	"device":       "device",
+	// App analytics.
+	"app_version":  "app_version",
+	"app_build":    "app_build",
+	"device_model": "device_model",
+	"locale":       "locale",
 }
 
 // column returns the SQL for a filter/breakdown dimension.

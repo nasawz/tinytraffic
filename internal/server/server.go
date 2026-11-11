@@ -45,6 +45,7 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 
 	mux.Handle("/api/event", s.Ingest)
+	mux.Handle("/api/app/event", ingest.AppHandler{Handler: s.Ingest})
 	mux.HandleFunc("GET /js/script.js", s.serveTracker)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("ok")) })
 
@@ -66,6 +67,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/sites/{site}/aggregate", s.viewable(s.aggregate))
 	mux.HandleFunc("GET /api/sites/{site}/timeseries", s.viewable(s.timeseries))
 	mux.HandleFunc("GET /api/sites/{site}/breakdown/{dim}", s.viewable(s.breakdown))
+	mux.HandleFunc("GET /api/sites/{site}/app", s.viewable(s.appSummary))
+	mux.HandleFunc("GET /api/sites/{site}/retention", s.viewable(s.retention))
 	mux.HandleFunc("GET /api/sites/{site}/realtime", s.viewable(s.realtime))
 	mux.HandleFunc("GET /api/sites/{site}/locations", s.private(s.locations))
 	mux.HandleFunc("GET /api/sites/{site}/live", s.private(s.live))
@@ -473,6 +476,38 @@ func (s *Server) breakdown(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, res)
+}
+
+// appSummary serves active and new users for app sites.
+func (s *Server) appSummary(w http.ResponseWriter, r *http.Request) {
+	q, ok := s.query(w, r)
+	if !ok {
+		return
+	}
+	res, err := stats.App(r.Context(), s.Store.Events, q, time.Now())
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, res)
+}
+
+// retention serves day cohorts; ?days= sets how many cohorts (default 14).
+func (s *Server) retention(w http.ResponseWriter, r *http.Request) {
+	q, ok := s.query(w, r)
+	if !ok {
+		return
+	}
+	days, _ := strconv.Atoi(r.URL.Query().Get("days"))
+	if days <= 0 {
+		days = 14
+	}
+	cohorts, err := stats.Retention(r.Context(), s.Store.Events, q, time.Now(), days)
+	if err != nil {
+		s.serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"cohorts": cohorts})
 }
 
 func (s *Server) realtime(w http.ResponseWriter, r *http.Request) {

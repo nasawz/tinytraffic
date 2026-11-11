@@ -124,6 +124,13 @@ var migrations = [][]string{
 	{
 		// Public sites' dashboards can be viewed without signing in.
 		`ALTER TABLE sites ADD COLUMN public BOOLEAN DEFAULT false`,
+	}, {
+		// App analytics: version, build, device model and locale of the app
+		// that sent the event. Empty for web events.
+		`ALTER TABLE events ADD COLUMN IF NOT EXISTS app_version VARCHAR DEFAULT ''`,
+		`ALTER TABLE events ADD COLUMN IF NOT EXISTS app_build VARCHAR DEFAULT ''`,
+		`ALTER TABLE events ADD COLUMN IF NOT EXISTS device_model VARCHAR DEFAULT ''`,
+		`ALTER TABLE events ADD COLUMN IF NOT EXISTS locale VARCHAR DEFAULT ''`,
 	},
 }
 
