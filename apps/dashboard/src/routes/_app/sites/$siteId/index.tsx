@@ -2,14 +2,16 @@ import { keepPreviousData, useQuery } from "@tanstack/solid-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/solid-router";
 import { Earth } from "lucide-solid";
 import { createMemo, onCleanup, onMount, Show } from "solid-js";
+import { AppSummaryTiles } from "~/components/app-summary";
 import { BreakdownPanel } from "~/components/breakdown-panel";
 import { FilterBar, parseFilter } from "~/components/filter-bar";
 import { metricDefs, MetricTiles, type MetricKey } from "~/components/metric-tiles";
 import { PeriodPicker, type PeriodValue } from "~/components/period-picker";
 import { Realtime } from "~/components/realtime";
+import { RetentionTable } from "~/components/retention-table";
 import { TrafficChart } from "~/components/traffic-chart";
 import { buttonVariants } from "~/components/ui/button";
-import { Card, CardContent, Surface } from "~/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Surface } from "~/components/ui/card";
 import { Skeleton } from "~/components/ui/skeleton";
 import { api, type StatsParams } from "~/lib/api";
 import { useSignedIn } from "~/lib/auth";
@@ -64,6 +66,18 @@ function Dashboard() {
     queryKey: ["aggregate", siteId(), stats()],
     queryFn: () => api.aggregate(siteId(), stats()),
     placeholderData: keepPreviousData,
+  }));
+  const appSummary = useQuery(() => ({
+    queryKey: ["app", siteId(), stats()],
+    queryFn: () => api.app(siteId(), stats()),
+    placeholderData: keepPreviousData,
+  }));
+  const isApp = () => ready(appSummary)?.is_app === true;
+  const retention = useQuery(() => ({
+    queryKey: ["retention", siteId(), stats()],
+    queryFn: () => api.retention(siteId(), stats()),
+    placeholderData: keepPreviousData,
+    enabled: isApp(),
   }));
   const info = useQuery(() => ({ queryKey: ["info"], queryFn: api.info, staleTime: Infinity }));
   const series = useQuery(() => ({
@@ -158,6 +172,19 @@ function Dashboard() {
         </CardContent>
       </Card>
 
+      <Show when={isApp()}>
+        <Card>
+          <AppSummaryTiles data={ready(appSummary)} />
+          <CardHeader>
+            <CardTitle>{t().app.retentionTitle}</CardTitle>
+            <CardDescription>{t().app.retentionDescription}</CardDescription>
+          </CardHeader>
+          <CardContent class="px-3 py-4 sm:px-5">
+            <RetentionTable cohorts={ready(retention)?.cohorts} />
+          </CardContent>
+        </Card>
+      </Show>
+
       <div class="grid gap-4 md:grid-cols-2">
         <BreakdownPanel
           id="Sources"
@@ -165,11 +192,15 @@ function Dashboard() {
           site={siteId()}
           params={stats()}
           onFilter={addFilter}
-          tabs={[
-            { dim: "source", label: t().dashboard.sources, column: t().dashboard.source, countLabel: t().dashboard.pageviews },
-            { dim: "referrer", label: t().dashboard.referrers, column: t().dashboard.referrer, countLabel: t().dashboard.pageviews },
-            { dim: "utm_campaign", label: t().dashboard.campaigns, column: t().dashboard.campaign, countLabel: t().dashboard.pageviews },
-          ]}
+          tabs={
+            isApp()
+              ? [{ dim: "source", label: t().dashboard.channels, column: t().dashboard.channel, countLabel: t().dashboard.views }]
+              : [
+                  { dim: "source", label: t().dashboard.sources, column: t().dashboard.source, countLabel: t().dashboard.pageviews },
+                  { dim: "referrer", label: t().dashboard.referrers, column: t().dashboard.referrer, countLabel: t().dashboard.pageviews },
+                  { dim: "utm_campaign", label: t().dashboard.campaigns, column: t().dashboard.campaign, countLabel: t().dashboard.pageviews },
+                ]
+          }
         />
         <BreakdownPanel
           id="Pages"
@@ -178,7 +209,12 @@ function Dashboard() {
           params={stats()}
           onFilter={addFilter}
           tabs={[
-            { dim: "page", label: t().dashboard.top, column: t().dashboard.page, countLabel: t().dashboard.pageviews },
+            {
+              dim: "page",
+              label: isApp() ? t().dashboard.screens : t().dashboard.top,
+              column: isApp() ? t().dashboard.screen : t().dashboard.page,
+              countLabel: isApp() ? t().dashboard.views : t().dashboard.pageviews,
+            },
             { dim: "entry_page", label: t().dashboard.entry, column: t().dashboard.entryPage, countLabel: t().dashboard.visits },
             { dim: "exit_page", label: t().dashboard.exit, column: t().dashboard.exitPage, countLabel: t().dashboard.visits },
           ]}
@@ -214,11 +250,21 @@ function Dashboard() {
           site={siteId()}
           params={stats()}
           onFilter={addFilter}
-          tabs={[
-            { dim: "browser", label: t().dashboard.browsers, column: t().dashboard.browser, countLabel: t().dashboard.pageviews },
-            { dim: "os", label: t().dashboard.os, column: t().dashboard.operatingSystem, countLabel: t().dashboard.pageviews },
-            { dim: "device", label: t().dashboard.size, column: t().dashboard.screenSize, countLabel: t().dashboard.pageviews },
-          ]}
+          tabs={
+            isApp()
+              ? [
+                  { dim: "app_version", label: t().dashboard.versions, column: t().dashboard.appVersion, countLabel: t().dashboard.views },
+                  { dim: "os", label: t().dashboard.os, column: t().dashboard.operatingSystem, countLabel: t().dashboard.views },
+                  { dim: "device_model", label: t().dashboard.models, column: t().dashboard.deviceModel, countLabel: t().dashboard.views },
+                  { dim: "locale", label: t().dashboard.languages, column: t().dashboard.language, countLabel: t().dashboard.views },
+                  { dim: "app_build", label: t().dashboard.builds, column: t().dashboard.build, countLabel: t().dashboard.views },
+                ]
+              : [
+                  { dim: "browser", label: t().dashboard.browsers, column: t().dashboard.browser, countLabel: t().dashboard.pageviews },
+                  { dim: "os", label: t().dashboard.os, column: t().dashboard.operatingSystem, countLabel: t().dashboard.pageviews },
+                  { dim: "device", label: t().dashboard.size, column: t().dashboard.screenSize, countLabel: t().dashboard.pageviews },
+                ]
+          }
         />
         <BreakdownPanel
           id="Goals"

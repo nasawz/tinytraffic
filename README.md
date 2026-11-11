@@ -6,6 +6,8 @@ DuckDB file, no cookies.
 - **Tracker**: ~1 KB gzipped. Pageviews (including SPA navigation), outbound
   link clicks and custom events. Accepts Plausible's event format, so existing
   Plausible integrations work.
+- **Apps**: iOS and HarmonyOS SDKs, active users (DAU/WAU/MAU), retention,
+  app versions and device models. See [docs/apps.md](docs/apps.md).
 - **Privacy**: no cookies or storage. Visitors are identified by
   `hash(daily salt, site, IP, user agent)`. The salt rotates at midnight in the
   site's timezone, and the IP is never stored. Referrers keep their domain and path; query strings are

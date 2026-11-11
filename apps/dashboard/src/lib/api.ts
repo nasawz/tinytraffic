@@ -65,6 +65,20 @@ export type BreakdownRow = {
 };
 export type Breakdown = { rows: BreakdownRow[]; total_visitors: number };
 
+/** Active and new users of an app site. */
+export type AppSummary = {
+  is_app: boolean;
+  dau: number;
+  wau: number;
+  mau: number;
+  new_users: number;
+  returning_users: number;
+  total_users: number;
+};
+
+/** Users first seen on `date`; retained[n] is how many were active n days later (null: not yet). */
+export type Cohort = { date: string; size: number; retained: (number | null)[] };
+
 export type ServerInfo = {
   geoip: { enabled: boolean; attribution: { text: string; url: string } };
 };
@@ -145,6 +159,9 @@ export const api = {
   timeseries: (ref: string, p: StatsParams) => request<Timeseries>(`${site(ref)}/timeseries?${qs(p)}`),
   breakdown: (ref: string, dim: string, p: StatsParams, limit = 10) =>
     request<Breakdown>(`${site(ref)}/breakdown/${dim}?${qs(p, { limit: String(limit) })}`),
+  app: (ref: string, p: StatsParams) => request<AppSummary>(`${site(ref)}/app?${qs(p)}`),
+  retention: (ref: string, p: StatsParams, days = 14) =>
+    request<{ cohorts: Cohort[] }>(`${site(ref)}/retention?${qs(p, { days: String(days) })}`),
   realtime: (ref: string) => request<{ visitors: number }>(`${site(ref)}/realtime`),
   locations: (ref: string, p: StatsParams, limit = 200) =>
     request<{ points: LocationPoint[] }>(`${site(ref)}/locations?${qs(p, { limit: String(limit) })}`),

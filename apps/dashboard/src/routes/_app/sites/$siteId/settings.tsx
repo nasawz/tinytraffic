@@ -57,6 +57,7 @@ function Settings() {
             </Show>
 
             <TrackingCard siteId={siteId()} domain={s().domain} hasData={s().visitors_24h > 0} />
+            <AppSdkCard appId={s().domain} />
             <DomainCard site={s()} />
             <TimezoneCard siteId={siteId()} timezone={s().timezone} />
             <VisibilityCard site={s()} />
@@ -65,6 +66,31 @@ function Settings() {
         )}
       </Show>
     </div>
+  );
+}
+
+function AppSdkCard(props: { appId: string }) {
+  const origin = typeof location === "undefined" ? "https://your-tinytraffic-host" : location.origin;
+  const ios = `TinyTraffic.shared.configure(endpoint: "${origin}", appId: "${props.appId}")`;
+  const ohos = `TinyTraffic.init(this.context, { endpoint: '${origin}', appId: '${props.appId}' });`;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t().settings.appTitle}</CardTitle>
+        <CardDescription>{t().settings.appDescription(props.appId)}</CardDescription>
+      </CardHeader>
+      <CardContent class="grid gap-4">
+        <div class="grid gap-2">
+          <h3 class="text-sm font-medium">iOS</h3>
+          <CodeBlock code={ios} />
+        </div>
+        <div class="grid gap-2">
+          <h3 class="text-sm font-medium">HarmonyOS</h3>
+          <CodeBlock code={ohos} />
+        </div>
+        <p class="text-xs text-muted-foreground">{t().settings.appSdkHint}</p>
+      </CardContent>
+    </Card>
   );
 }
 
